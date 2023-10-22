@@ -79,7 +79,7 @@ func (w *worker) spawnWorkers(ctx context.Context) {
 
 func (w *worker) CalculateOrder(orderID, userID string) {
 	fmt.Println("выполняется запрос к рассчетному сервису")
-	response, err := http.Get(w.config.AccuralSystemAddress + "/api/orders/" + orderID)
+	response, err := http.Get("http://" + w.config.AccuralSystemAddress + "/api/orders/" + orderID)
 	if err != nil {
 		fmt.Println("Что-то упало на запросе к системе рассчета", err)
 	}
@@ -99,7 +99,7 @@ func (w *worker) CalculateOrder(orderID, userID string) {
 		for {
 			fmt.Println("Запущена джоба по обновлению данных заказа")
 			time.Sleep(time.Second * 3)
-			response, err := http.Get(w.config.AccuralSystemAddress + "/api/orders/" + orderID)
+			response, err := http.Get("http://" + w.config.AccuralSystemAddress + "/api/orders/" + orderID)
 			if err != nil {
 				fmt.Println("Что-то упало на запросе к системе рассчета", err)
 			}
