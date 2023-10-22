@@ -88,7 +88,10 @@ func (w *worker) CalculateOrder(orderID, userID string) {
 	response, err := client.Do(request)
 	orderData := GetResponseBody(response)
 	fmt.Println("Создаем заказ в базе")
-	w.storage.CreateOrder(orderID, userID, orderData.Status, orderData.Accrual)
+	ok := w.storage.CreateOrder(orderID, userID, orderData.Status, orderData.Accrual)
+	if !ok {
+		return
+	}
 	if orderData.Status == "PROCESSED" {
 		fmt.Println("Происходит регистрация транзакции, начисление денег на кошелек")
 		w.storage.RegisterIncomeTransaction(userID, orderID, orderData.Accrual)

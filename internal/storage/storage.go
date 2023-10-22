@@ -10,7 +10,7 @@ type Storage interface {
 	CreateUser(string, string) (string, error)
 	Login(string, string) string
 	CheckOrderOwner(string) string
-	CreateOrder(string, string, string, float64)
+	CreateOrder(string, string, string, float64) bool
 	UpdateOrder(string, string, float64)
 	GetUserOrders(string) []UserOrderInfo
 	RegisterIncomeTransaction(string, string, float64)

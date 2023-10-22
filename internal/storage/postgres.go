@@ -104,11 +104,23 @@ func (p *Postgres) CheckOrderOwner(orderID string) string {
 	return result
 }
 
-func (p *Postgres) CreateOrder(orderID, userID, status string, amount float64) {
-	owner := p.CheckOrderOwner(userID)
-	if owner == userID {
-		return
+func (p *Postgres) GetOrder(orderID string) bool {
+	var result string
+	row := p.dbConnection.QueryRowContext(context.Background(),
+		"SELECT user_id FROM orders WHERE order_id=$1", orderID)
+	row.Scan(&result)
+	if result == "" {
+		return false
 	}
+	return true
+}
+
+func (p *Postgres) CreateOrder(orderID, userID, status string, amount float64) bool {
+	ok := p.GetOrder(orderID)
+	if ok {
+		return false
+	}
+
 	fmt.Println("Запущен процесс сохранения заказа в базу")
 	fmt.Println("Полученные данные для сохранения заказа:")
 	fmt.Println(orderID, "- номер заказа\n", userID, "- id юзера \n", status, "- статус заказа\n", amount, "- начисленно баллов")
@@ -124,6 +136,7 @@ func (p *Postgres) CreateOrder(orderID, userID, status string, amount float64) {
 		fmt.Println("Ошибка на получении числа заафекченных строк в базе при создании заказа", err)
 	}
 	fmt.Println("Запрос с сохранением заказа успешно завершен, вот столько строк было зааффекчено:", number)
+	return true
 }
 
 func (p *Postgres) UpdateOrder(orderID, status string, amount float64) {
