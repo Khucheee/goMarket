@@ -83,10 +83,8 @@ func (w *worker) CalculateOrder(orderID, userID string) {
 	if err != nil {
 		fmt.Println("Что-то упало на запросе к системе рассчета", err)
 	}
-	if response.StatusCode != 200 {
-		//если статус 429, то ждем
-		//если статус 204, то ставим на таймер
-	}
+	//если статус 429, то ждем
+	//если статус 204, то ставим на таймер
 	orderData := GetResponseBody(response)
 	w.storage.CreateOrder(orderID, userID, orderData.Status, orderData.Accrual)
 	if orderData.Status == "PROCESSED" {

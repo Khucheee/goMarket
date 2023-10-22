@@ -28,7 +28,7 @@ type WithdrawalsHistory struct {
 }
 
 // "host=localhost user=postgres password=ALFREd2002 dbname=postgres sslmode=disable"
-const migrationFolder = "file://../../internal/storage/migrations/"
+const migrationFolder = "file://internal/storage/migrations/"
 
 type Postgres struct {
 	DatabaseURI  string
