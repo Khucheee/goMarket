@@ -84,6 +84,7 @@ func (w *worker) CalculateOrder(orderID, userID string) {
 	if err != nil {
 		fmt.Println("Что-то упало на запросе к системе рассчета", err)
 	}
+	fmt.Println("Вывожу адресс по которому мы стучимся к системе рассчета:", "http://"+w.config.AccuralSystemAddress+"/api/orders/"+orderID)
 	request.Header.Add("Content-Length", "0")
 	response, err := client.Do(request)
 	fmt.Println("Статус код ответа сервиса рассчета:", response.StatusCode)
