@@ -96,7 +96,7 @@ func (w *worker) CalculateOrder(orderID, userID string) {
 		//каждые 15 секунд запрашиваем новые данные по этому заказу
 		for {
 			fmt.Println("Запущена джоба по обновлению данных заказа")
-			time.Sleep(time.Second * 3)
+			time.Sleep(time.Second)
 			response, err := http.Get("http://" + w.config.AccuralSystemAddress + "/api/orders/" + orderID)
 			if err != nil {
 				fmt.Println("Что-то упало на запросе к системе рассчета", err)
@@ -105,6 +105,7 @@ func (w *worker) CalculateOrder(orderID, userID string) {
 			//если получаем конечный статус, то обновляем данные по заказу и прерывем цикл
 			if response.Status == "PROCESSED" {
 				w.storage.UpdateOrder(orderID, orderData.Status, orderData.Accrual)
+				fmt.Println("Происходит регистрация транзакции, начисление денег на кошелек")
 				w.storage.RegisterIncomeTransaction(userID, orderID, orderData.Accrual)
 				break
 			}
