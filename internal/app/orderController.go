@@ -78,11 +78,11 @@ func (c *Controller) EvaluateOrder(w http.ResponseWriter, r *http.Request) {
 	}
 	//дальше, если такого заказа еще не было, то идем к сервису рассчетов, получаем из него данные и записываем в базу
 	fmt.Println("передаем значение в воркеры")
-	w.WriteHeader(http.StatusAccepted)
-	w.Write([]byte("Новый номер заказа принят в обработку"))
+
 	orderForWorker := concurrency.OrderForWorker{OrderID: orderID, UserID: userID}
 	*c.accrualChannel <- orderForWorker
-
+	w.WriteHeader(http.StatusAccepted)
+	w.Write([]byte("Новый номер заказа принят в обработку"))
 	//c.CalculateOrder(orderID, userID)
 }
 
@@ -118,15 +118,15 @@ func (c *Controller) GetOrders(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	userOrdersInfo := c.storage.GetUserOrders(userID)
+	if len(userOrdersInfo) == 0 {
+		w.WriteHeader(http.StatusNoContent)
+		w.Write([]byte("Вы еще не загрузили ни одного заказа"))
+		return
+	}
 	resp, err := json.Marshal(userOrdersInfo) //тут собираем их в jsonkу
 	if err != nil {
 		log.Printf("AllUserLinks: could not encode json \n %#v \n %#v \n\n", err, userOrdersInfo)
 		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-	if len(resp) == 0 {
-		w.WriteHeader(http.StatusNoContent)
-		w.Write([]byte("Вы еще не загрузили ни одного заказа"))
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")

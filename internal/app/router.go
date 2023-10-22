@@ -1,14 +1,13 @@
 package app
 
 import (
-	"github.com/Khucheee/goMarket/internal/compress"
 	"github.com/go-chi/chi"
 )
 
 func (c *Controller) Route() *chi.Mux {
 	router := chi.NewRouter()
 	router.Use(c.WithLogging)
-	router.Use(compress.Gzip)
+	//router.Use(compress.Gzip)
 	router.Route("/", func(router chi.Router) {
 		router.Route("/api", func(router chi.Router) {
 			router.Route("/user", func(router chi.Router) {
