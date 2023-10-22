@@ -149,8 +149,8 @@ func GetResponseBody(response *http.Response) *AccrualServiceResponse {
 	}
 	err = json.Unmarshal(buf.Bytes(), &orderData) //парсим тело в нашу структуру
 	if err != nil {
-		fmt.Println("Не получилось распарсить json из тела ответа системы рассчета бонусов")
-		return nil
+		fmt.Println("Не получилось распарсить json из тела ответа системы рассчета бонусов", err)
+		return &orderData
 	}
 	return &orderData
 }
