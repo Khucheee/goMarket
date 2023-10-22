@@ -21,7 +21,7 @@ func main() {
 	controller := app.NewController(storage, config, worker, accrualChannel, logger) //создаем оператор //переименовать в контроллер обратно))
 	router := chi.NewRouter()                                                        //создаем роутер
 	router.Mount("/", controller.Route())
-	err := http.ListenAndServe("localhost:1234", router) //запускаем сервер
+	err := http.ListenAndServe(config.RunAddress, router) //запускаем сервер
 	if err != nil {
 		//тут будем логировать
 	}
