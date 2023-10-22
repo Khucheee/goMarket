@@ -104,9 +104,11 @@ func (p *Postgres) CheckOrderOwner(orderID string) string {
 }
 
 func (p *Postgres) CreateOrder(orderID, userID, status string, amount float64) {
+	fmt.Println("Запущен процесс сохранения заказа в базу")
 	_, err := p.dbConnection.Exec(context.Background(),
 		"INSERT INTO orders VALUES($1,$2,$3,$4,now(),now())",
 		orderID, userID, status, amount)
+	fmt.Println("Запрос с сохранением заказа успешно завершен")
 	if err != nil {
 		fmt.Println("Что-то упало при создании заказа в базе:", err)
 	}
