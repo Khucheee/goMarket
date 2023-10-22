@@ -100,8 +100,8 @@ func (w *worker) CalculateOrder(orderID, userID string) {
 		w.storage.RegisterIncomeTransaction(userID, orderID, orderData.Accrual)
 	}
 	//если статус заказа промежуточный
-	if orderData.Status == "REGISTERED" || orderData.Status == "PROCESSING" {
-		//каждые 15 секунд запрашиваем новые данные по этому заказу
+	if orderData.Status == "REGISTERED" || orderData.Status == "PROCESSING" || orderData.Status == "" {
+		//каждые 1 секунд запрашиваем новые данные по этому заказу
 		for {
 			fmt.Println("Запущена джоба по обновлению данных заказа")
 			time.Sleep(time.Second)

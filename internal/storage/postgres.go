@@ -125,6 +125,10 @@ func (p *Postgres) CreateOrder(orderID, userID, status string, amount float64) b
 	fmt.Println("Запущен процесс сохранения заказа в базу")
 	fmt.Println("Полученные данные для сохранения заказа:")
 	fmt.Println(orderID, "- номер заказа\n", userID, "- id юзера \n", status, "- статус заказа\n", amount, "- начисленно баллов")
+	if status == "" || status == "REGISTERED" {
+		fmt.Println("Пришел пустой статус заказа, проставляю NEW")
+		status = "NEW"
+	}
 	row, err := p.dbConnection.ExecContext(context.Background(),
 		"INSERT INTO orders VALUES($1,$2,$3,$4,now(),now())",
 		orderID, userID, status, amount)
