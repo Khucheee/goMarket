@@ -17,6 +17,7 @@ type Storage interface {
 	GetWalletInfo(string) (float64, float64)
 	RegisterOutcomeTransaction(string, string, float64) bool
 	GetUserWithdrawals(string) []WithdrawalsHistory
+	GetOrder(string) bool
 }
 
 func NewStorage(config *config.Config) Storage {

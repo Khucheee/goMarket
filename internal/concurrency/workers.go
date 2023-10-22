@@ -89,7 +89,10 @@ func (w *worker) CalculateOrder(orderID, userID string) {
 	response, err := client.Do(request)
 	fmt.Println("Статус код ответа сервиса рассчета:", response.StatusCode)
 	if response.StatusCode == http.StatusNoContent {
-		w.storage.CreateOrder(orderID, userID, "NEW", 0)
+		ok := w.storage.CreateOrder(orderID, userID, "NEW", 0)
+		if !ok {
+			return
+		}
 		return
 	}
 	orderData := GetResponseBody(response)

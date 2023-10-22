@@ -101,6 +101,7 @@ func (p *Postgres) CheckOrderOwner(orderID string) string {
 	row := p.dbConnection.QueryRowContext(context.Background(),
 		"SELECT user_id FROM orders WHERE order_id=$1", orderID)
 	row.Scan(&result)
+	fmt.Println("Запущена проверка пользователя по заказу, пользователь:", result)
 	return result
 }
 

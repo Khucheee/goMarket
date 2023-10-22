@@ -33,11 +33,6 @@ func (c *Controller) EvaluateOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	orderID := buf.String()
-	//if len(orderID) != 10 {
-	//	fmt.Println("Неправильный формат номера заказа")
-	//	w.WriteHeader(http.StatusUnprocessableEntity)
-	//	return
-	//}
 	check, err := strconv.Atoi(orderID)
 	if err != nil {
 		fmt.Println("Не получилось перевести строку в инт для проверки номера заказа", err)
@@ -52,12 +47,14 @@ func (c *Controller) EvaluateOrder(w http.ResponseWriter, r *http.Request) {
 	}
 	owner := c.storage.CheckOrderOwner(orderID)
 	//если создатель не вы
-	if owner != userID && owner != "" {
+	if owner != userID && owner != "" { //если пользователь не наш и не пустой значит номер был загружен другим пользователем
 		w.WriteHeader(http.StatusConflict)
 		w.Write([]byte("Номер заказа уже был загружен другим пользователем"))
 		return
 	}
-	if owner == userID {
+	fmt.Println("сейчас для проверки сравним id из куки и id пользователя из базы, если совпадут, то 200")
+	fmt.Println("userID:", userID, "owner:", owner)
+	if owner == userID { //если пользователь наш, то мы уже загружали данный заказ
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("Вы уже загружали данный заказ"))
 		return
