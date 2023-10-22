@@ -6,8 +6,10 @@ import (
 	"fmt"
 	"github.com/Khucheee/goMarket/internal/auth"
 	"github.com/Khucheee/goMarket/internal/concurrency"
+	"github.com/Khucheee/goMarket/internal/luhn"
 	"log"
 	"net/http"
+	"strconv"
 )
 
 // загрузка номера заказа
@@ -29,6 +31,12 @@ func (c *Controller) EvaluateOrder(w http.ResponseWriter, r *http.Request) {
 	userID, err := auth.ParseUserFromCookie(r)
 	if err != nil || userID == "" {
 		w.WriteHeader(http.StatusUnauthorized)
+		w.Write([]byte("пользователь не аутентифицирован"))
+		return
+	}
+	if contentType := r.Header.Get("Content-Type"); contentType != "text/plain" {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte("Неверный формат запроса"))
 		return
 	}
 	var buf bytes.Buffer //создаем буфер для получение тела запроса
@@ -39,25 +47,39 @@ func (c *Controller) EvaluateOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	orderID := buf.String()
-	if len(orderID) != 10 {
-		fmt.Println("Неправильный формат номера заказа")
+	//if len(orderID) != 10 {
+	//	fmt.Println("Неправильный формат номера заказа")
+	//	w.WriteHeader(http.StatusUnprocessableEntity)
+	//	return
+	//}
+	check, err := strconv.Atoi(orderID)
+	if err != nil {
+		fmt.Println("Не получилось перевести строку в инт для проверки номера заказа", err)
 		w.WriteHeader(http.StatusUnprocessableEntity)
+		w.Write([]byte("Номер заказа должен быть целым числом"))
+		return
+	}
+	if !luhn.Valid(check) {
+		w.WriteHeader(http.StatusUnprocessableEntity)
+		w.Write([]byte("Неверный формат номера заказа"))
 		return
 	}
 	owner := c.storage.CheckOrderOwner(orderID)
 	//если создатель не вы
 	if owner != userID && owner != "" {
 		w.WriteHeader(http.StatusConflict)
+		w.Write([]byte("Номер заказа уже был загружен другим пользователем"))
 		return
 	}
 	if owner == userID {
 		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("Вы уже загружали данный заказ"))
 		return
 	}
 	//дальше, если такого заказа еще не было, то идем к сервису рассчетов, получаем из него данные и записываем в базу
 	fmt.Println("передаем значение в воркеры")
 	w.WriteHeader(http.StatusAccepted)
-	w.Write([]byte("Заказ притят в обработку"))
+	w.Write([]byte("Новый номер заказа принят в обработку"))
 	orderForWorker := concurrency.OrderForWorker{OrderID: orderID, UserID: userID}
 	*c.accrualChannel <- orderForWorker
 
@@ -92,12 +114,19 @@ func (c *Controller) GetOrders(w http.ResponseWriter, r *http.Request) {
 	userID, err := auth.ParseUserFromCookie(r)
 	if err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
+		w.Write([]byte("пользователь не аутентифицирован"))
 		return
 	}
 	userOrdersInfo := c.storage.GetUserOrders(userID)
 	resp, err := json.Marshal(userOrdersInfo) //тут собираем их в jsonkу
 	if err != nil {
 		log.Printf("AllUserLinks: could not encode json \n %#v \n %#v \n\n", err, userOrdersInfo)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	if len(resp) == 0 {
+		w.WriteHeader(http.StatusNoContent)
+		w.Write([]byte("Вы еще не загрузили ни одного заказа"))
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")

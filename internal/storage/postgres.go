@@ -187,7 +187,7 @@ func (p *Postgres) RegisterOutcomeTransaction(userID, orderID string, withdrawal
 func (p *Postgres) GetUserWithdrawals(userID string) []WithdrawalsHistory {
 	withdrawals := []WithdrawalsHistory{}
 	rows, err := p.dbConnection.QueryContext(context.Background(),
-		"SELECT order_id,amount,created_at FROM account_transaction WHERE user_id = $1 order by created_at", userID)
+		"SELECT order_id,amount,created_at FROM account_transaction WHERE user_id = $1 and operation_type='OUTCOME' order by created_at", userID)
 	if err != nil {
 		fmt.Println("Что-то упало на запросе заказов пользователя", err)
 		return withdrawals
