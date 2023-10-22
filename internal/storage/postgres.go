@@ -17,7 +17,7 @@ import (
 type UserOrderInfo struct {
 	OrderID    string  `json:"number"`
 	Status     string  `json:"status"`
-	Amount     float64 `json:"accural"`
+	Amount     float64 `json:"accrual"`
 	Created_at string  `json:"uploaded_at"`
 }
 
