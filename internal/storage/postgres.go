@@ -8,6 +8,7 @@ import (
 	"github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgxpool"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"log"
 	"math"
@@ -28,20 +29,21 @@ type WithdrawalsHistory struct {
 }
 
 // "host=localhost user=postgres password=ALFREd2002 dbname=postgres sslmode=disable"
-const migrationFolder = "file://internal/storage/migrations/"
+const migrationFolder = "file://../../internal/storage/migrations/"
 
 type Postgres struct {
 	DatabaseURI  string
-	dbConnection *sql.DB
+	dbConnection *pgxpool.Pool
 }
 
 func (p *Postgres) Initialize() {
-	dbConnection, err := sql.Open("pgx", p.DatabaseURI)
+	connectionForMigrations, err := sql.Open("pgx", p.DatabaseURI)
 	if err != nil {
 		fmt.Println("Упала база на создании соединения", err)
 	}
+	defer connectionForMigrations.Close()
 	//миграция
-	driver, err := postgres.WithInstance(dbConnection, &postgres.Config{})
+	driver, err := postgres.WithInstance(connectionForMigrations, &postgres.Config{})
 	if err != nil {
 		fmt.Println("Упала база на получении драйвера для миграции", err)
 	}
@@ -56,13 +58,14 @@ func (p *Postgres) Initialize() {
 		}
 	}
 	//сохраняем подключение
+	dbConnection, err := pgxpool.New(context.Background(), p.DatabaseURI)
 	p.dbConnection = dbConnection
 }
 
 func (p *Postgres) CheckLoginExist(login string) bool {
 	//запрос в базу
 	var result string
-	row := p.dbConnection.QueryRowContext(context.Background(),
+	row := p.dbConnection.QueryRow(context.Background(),
 		"SELECT user_id FROM usr WHERE login=$1", login)
 	row.Scan(&result)
 	//если вернулось пусто, то return false
@@ -74,7 +77,7 @@ func (p *Postgres) CheckLoginExist(login string) bool {
 
 func (p *Postgres) CreateUser(login, password string) (string, error) {
 	userID := uuid.New().String()
-	_, err := p.dbConnection.ExecContext(context.Background(),
+	_, err := p.dbConnection.Exec(context.Background(),
 		"INSERT INTO usr VALUES($1,$2,$3)",
 		userID, login, password)
 	if err != nil {
@@ -85,7 +88,7 @@ func (p *Postgres) CreateUser(login, password string) (string, error) {
 
 func (p *Postgres) Login(login, password string) string {
 	var result string
-	row := p.dbConnection.QueryRowContext(context.Background(),
+	row := p.dbConnection.QueryRow(context.Background(),
 		"SELECT user_id FROM usr WHERE login=$1 and password=$2", login, password)
 	row.Scan(&result)
 	//если вернулось пусто, то return false
@@ -94,14 +97,14 @@ func (p *Postgres) Login(login, password string) string {
 
 func (p *Postgres) CheckOrderOwner(orderID string) string {
 	var result string
-	row := p.dbConnection.QueryRowContext(context.Background(),
+	row := p.dbConnection.QueryRow(context.Background(),
 		"SELECT user_id FROM orders WHERE order_id=$1", orderID)
 	row.Scan(&result)
 	return result
 }
 
 func (p *Postgres) CreateOrder(orderID, userID, status string, amount float64) {
-	_, err := p.dbConnection.ExecContext(context.Background(),
+	_, err := p.dbConnection.Exec(context.Background(),
 		"INSERT INTO orders VALUES($1,$2,$3,$4,now(),now())",
 		orderID, userID, status, amount)
 	if err != nil {
@@ -111,7 +114,7 @@ func (p *Postgres) CreateOrder(orderID, userID, status string, amount float64) {
 
 func (p *Postgres) UpdateOrder(orderID, status string, amount float64) {
 	query := "UPDATE orders SET status=$1,amount=$2,updated_at=now() WHERE order_id=$3"
-	_, err := p.dbConnection.ExecContext(context.Background(), query, status, amount, orderID)
+	_, err := p.dbConnection.Exec(context.Background(), query, status, amount, orderID)
 	if err != nil {
 		log.Println("Что-то упало на обновлении заказа в базе", err)
 	}
@@ -119,7 +122,7 @@ func (p *Postgres) UpdateOrder(orderID, status string, amount float64) {
 
 func (p *Postgres) GetUserOrders(userID string) []UserOrderInfo {
 	orders := []UserOrderInfo{}
-	rows, err := p.dbConnection.QueryContext(context.Background(),
+	rows, err := p.dbConnection.Query(context.Background(),
 		"SELECT order_id,status,amount,created_at FROM orders WHERE user_id = $1 order by created_at", userID)
 	if err != nil {
 		fmt.Println("Что-то упало на запросе заказов пользователя", err)
@@ -147,7 +150,7 @@ func (p *Postgres) GetUserOrders(userID string) []UserOrderInfo {
 
 func (p *Postgres) RegisterIncomeTransaction(userID, orderID string, amount float64) {
 	operationType := "INCOME"
-	_, err := p.dbConnection.ExecContext(context.Background(),
+	_, err := p.dbConnection.Exec(context.Background(),
 		"INSERT INTO account_transaction VALUES($1,$2,$3,$4,now())", userID, operationType, orderID, amount)
 	if err != nil {
 		fmt.Println("Что-то упало при создании поступления средств на кошелек в базе:", err)
@@ -156,12 +159,12 @@ func (p *Postgres) RegisterIncomeTransaction(userID, orderID string, amount floa
 
 func (p *Postgres) GetWalletInfo(userID string) (float64, float64) {
 	var incomes float64
-	row := p.dbConnection.QueryRowContext(context.Background(),
+	row := p.dbConnection.QueryRow(context.Background(),
 		"SELECT sum(amount) FROM account_transaction WHERE user_id = $1 and operation_type='INCOME'", userID)
 	row.Scan(&incomes)
 
 	var outcomes float64
-	row = p.dbConnection.QueryRowContext(context.Background(),
+	row = p.dbConnection.QueryRow(context.Background(),
 		"SELECT sum(amount) FROM account_transaction WHERE user_id = $1 and operation_type='OUTCOME'", userID)
 	row.Scan(&outcomes)
 	balance := incomes - outcomes
@@ -176,7 +179,7 @@ func (p *Postgres) RegisterOutcomeTransaction(userID, orderID string, withdrawal
 		return false
 	}
 	operationType := "OUTCOME"
-	_, err := p.dbConnection.ExecContext(context.Background(),
+	_, err := p.dbConnection.Exec(context.Background(),
 		"INSERT INTO account_transaction VALUES($1,$2,$3,$4,now())", userID, operationType, orderID, withdrawal)
 	if err != nil {
 		fmt.Println("Что-то упало при создании операции на списание средств c кошелька в базе:", err)
@@ -186,7 +189,7 @@ func (p *Postgres) RegisterOutcomeTransaction(userID, orderID string, withdrawal
 
 func (p *Postgres) GetUserWithdrawals(userID string) []WithdrawalsHistory {
 	withdrawals := []WithdrawalsHistory{}
-	rows, err := p.dbConnection.QueryContext(context.Background(),
+	rows, err := p.dbConnection.Query(context.Background(),
 		"SELECT order_id,amount,created_at FROM account_transaction WHERE user_id = $1 and operation_type='OUTCOME' order by created_at", userID)
 	if err != nil {
 		fmt.Println("Что-то упало на запросе заказов пользователя", err)
