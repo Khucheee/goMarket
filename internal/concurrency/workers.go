@@ -80,7 +80,7 @@ func (w *worker) CalculateOrder(orderID, userID string) {
 	fmt.Println("выполняется запрос к рассчетному сервису")
 	//response, err := http.Get("http://" + w.config.AccuralSystemAddress + "/api/orders/" + orderID)
 	client := &http.Client{}
-	request, err := http.NewRequest(http.MethodGet, "http://"+w.config.AccuralSystemAddress+"/api/orders/"+orderID, nil)
+	request, err := http.NewRequest(http.MethodGet, w.config.AccuralSystemAddress+"/api/orders/"+orderID, nil)
 	if err != nil {
 		fmt.Println("Что-то упало на запросе к системе рассчета", err)
 	}
@@ -91,9 +91,6 @@ func (w *worker) CalculateOrder(orderID, userID string) {
 	if response.StatusCode == http.StatusNoContent {
 		w.storage.CreateOrder(orderID, userID, "NEW", 0)
 		return
-	}
-	if response.StatusCode == http.StatusNotFound {
-		w.storage.CreateOrder(orderID, userID, "INVALID", 0)
 	}
 	orderData := GetResponseBody(response)
 	fmt.Println("Создаем заказ в базе")
@@ -113,7 +110,7 @@ func (w *worker) CalculateOrder(orderID, userID string) {
 			fmt.Println("Запущена джоба по обновлению данных заказа")
 			time.Sleep(time.Second)
 			//response, err := http.Get("http://" + w.config.AccuralSystemAddress + "/api/orders/" + orderID)
-			request, err = http.NewRequest(http.MethodGet, "http://"+w.config.AccuralSystemAddress+"/api/orders/"+orderID, nil)
+			request, err = http.NewRequest(http.MethodGet, w.config.AccuralSystemAddress+"/api/orders/"+orderID, nil)
 			if err != nil {
 				fmt.Println("Что-то упало на запросе к системе рассчета", err)
 			}

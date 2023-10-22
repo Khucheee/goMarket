@@ -33,7 +33,7 @@ func (c *Config) setConfig() {
 	if ok {
 		c.DatabaseURI = databaseURI
 	}
-	accuralSystemAdress, ok := os.LookupEnv("RUN_ADDRESS")
+	accuralSystemAdress, ok := os.LookupEnv("ACCRUAL_ADDRESS")
 	if ok {
 		c.AccuralSystemAddress = accuralSystemAdress
 	}
