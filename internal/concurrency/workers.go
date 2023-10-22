@@ -86,9 +86,15 @@ func (w *worker) CalculateOrder(orderID, userID string) {
 	}
 	request.Header.Add("Content-Length", "0")
 	response, err := client.Do(request)
+	fmt.Println("Статус код ответа сервиса рассчета:", response.StatusCode)
+	if response.StatusCode == http.StatusNoContent {
+		w.storage.CreateOrder(orderID, userID, "NEW", 0)
+		return
+	}
 	orderData := GetResponseBody(response)
 	fmt.Println("Создаем заказ в базе")
 	ok := w.storage.CreateOrder(orderID, userID, orderData.Status, orderData.Accrual)
+	//пока колхозная проверка на существование заказа в базе
 	if !ok {
 		return
 	}
