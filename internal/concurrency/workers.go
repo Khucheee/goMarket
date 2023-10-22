@@ -8,7 +8,6 @@ import (
 	"github.com/Khucheee/goMarket/internal/config"
 	"github.com/Khucheee/goMarket/internal/storage"
 	"net/http"
-	"runtime"
 	"sync"
 	"time"
 )
@@ -51,7 +50,7 @@ func (w *worker) Start(pctx context.Context) {
 	ctx, cancelFunc := context.WithCancel(pctx)
 	w.cancelFunc = cancelFunc
 
-	for i := 0; i <= runtime.NumCPU(); i++ {
+	for i := 0; i <= 30; i++ {
 		w.wg.Add(1)
 		go w.spawnWorkers(ctx)
 	}
