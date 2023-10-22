@@ -15,16 +15,16 @@ import (
 )
 
 type UserOrderInfo struct {
-	OrderID    string  `json:"number"`
-	Status     string  `json:"status"`
-	Amount     float64 `json:"accrual"`
-	Created_at string  `json:"uploaded_at"`
+	OrderID   string  `json:"number"`
+	Status    string  `json:"status"`
+	Amount    float64 `json:"accrual"`
+	CreatedAt string  `json:"uploaded_at"`
 }
 
 type WithdrawalsHistory struct {
-	OrderID    string  `json:"order"`
-	Amount     float64 `json:"sum"`
-	Created_at string  `json:"processed_at"`
+	OrderID   string  `json:"order"`
+	Amount    float64 `json:"sum"`
+	CreatedAt string  `json:"processed_at"`
 }
 
 // "host=localhost user=postgres password=ALFREd2002 dbname=postgres sslmode=disable"
@@ -70,10 +70,7 @@ func (p *Postgres) CheckLoginExist(login string) bool {
 		"SELECT user_id FROM usr WHERE login=$1", login)
 	row.Scan(&result)
 	//если вернулось пусто, то return false
-	if result != "" {
-		return true
-	}
-	return false
+	return result != ""
 }
 
 func (p *Postgres) CreateUser(login, password string) (string, error) {
@@ -110,10 +107,7 @@ func (p *Postgres) GetOrder(orderID string) bool {
 	row := p.dbConnection.QueryRowContext(context.Background(),
 		"SELECT user_id FROM orders WHERE order_id=$1", orderID)
 	row.Scan(&result)
-	if result == "" {
-		return false
-	}
-	return true
+	return result != ""
 }
 
 func (p *Postgres) CreateOrder(orderID, userID, status string, amount float64) bool {
@@ -166,11 +160,11 @@ func (p *Postgres) GetUserOrders(userID string) []UserOrderInfo {
 	}
 	var tmp UserOrderInfo
 	for rows.Next() {
-		err = rows.Scan(&tmp.OrderID, &tmp.Status, &tmp.Amount, &tmp.Created_at)
+		err = rows.Scan(&tmp.OrderID, &tmp.Status, &tmp.Amount, &tmp.CreatedAt)
 		if err != nil {
 			fmt.Println("Что-то упало на сканировании полученных строк по заказам пользователя:", err)
 		}
-		t, err := time.Parse(time.RFC3339, tmp.Created_at)
+		t, err := time.Parse(time.RFC3339, tmp.CreatedAt)
 		if err != nil {
 			fmt.Println("Не получилось распарсить дату и время в нужный формат", err)
 		}
@@ -233,11 +227,11 @@ func (p *Postgres) GetUserWithdrawals(userID string) []WithdrawalsHistory {
 	}
 	var tmp WithdrawalsHistory
 	for rows.Next() {
-		err = rows.Scan(&tmp.OrderID, &tmp.Amount, &tmp.Created_at)
+		err = rows.Scan(&tmp.OrderID, &tmp.Amount, &tmp.CreatedAt)
 		if err != nil {
 			fmt.Println("Что-то упало на сканировании полученных строк по заказам пользователя:", err)
 		}
-		t, err := time.Parse(time.RFC3339, tmp.Created_at)
+		t, err := time.Parse(time.RFC3339, tmp.CreatedAt)
 		if err != nil {
 			fmt.Println("Не получилось распарсить дату и время в нужный формат", err)
 		}

@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"github.com/Khucheee/goMarket/internal/auth"
 	"github.com/Khucheee/goMarket/internal/luhn"
-	"log"
 	"net/http"
 	"strconv"
 )
@@ -23,16 +22,7 @@ type UseUserBonuses struct {
 
 // получение текущего баланса пользователя
 func (c *Controller) SeeUserBonuses(w http.ResponseWriter, r *http.Request) {
-	//доступен только авторизованному пользователю
-	//должны содержаться данные о текущей сумме баллов лояльности
-	//должны содержаться данные о сумме использованных за весь период регистрации баллов
-	/*
-		{
-			"current":float,
-			"withdrawn":float,
-		}
-	*/
-	//
+
 	userID, err := auth.ParseUserFromCookie(r)
 	if err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
@@ -43,7 +33,7 @@ func (c *Controller) SeeUserBonuses(w http.ResponseWriter, r *http.Request) {
 	userBonusesInfo.Balance, userBonusesInfo.Outcomes = c.storage.GetWalletInfo(userID)
 	resp, err := json.Marshal(userBonusesInfo) //тут собираем их в jsonkу
 	if err != nil {
-		log.Printf("Ошибка при сборке json с данными баланса кошелька", err)
+		fmt.Println("Ошибка при сборке json с данными баланса кошелька", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -54,20 +44,6 @@ func (c *Controller) SeeUserBonuses(w http.ResponseWriter, r *http.Request) {
 
 // запрос на списание средств
 func (c *Controller) UseUserBonuses(w http.ResponseWriter, r *http.Request) {
-	//доступен только для авторизованных пользователей
-	//номер заказа - гипотетический номер заказа пользователя в счет которого спписываются пользователи
-	//для успешного списания достаточно успешной реализации запроса
-	/*
-		{
-			"order":"",
-			"sum":751
-		}
-	*/
-	//200 - успешная обработка запроса
-	//401 - пользователь не авторизован
-	//402 - на счету недостаточно средств
-	//422 - неверный номер заказа
-	//внутренняя ошибка сервера
 	userID, err := auth.ParseUserFromCookie(r)
 	if err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
@@ -86,7 +62,7 @@ func (c *Controller) UseUserBonuses(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	json.Unmarshal(buf.Bytes(), &useUserBonuses) //парсим тело в нашу структуру
+	err = json.Unmarshal(buf.Bytes(), &useUserBonuses) //парсим тело в нашу структуру
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -144,7 +120,7 @@ func (c *Controller) SeeBonusesAccountHistory(w http.ResponseWriter, r *http.Req
 	}
 	resp, err := json.Marshal(userWithdrawalsInfo)
 	if err != nil {
-		log.Printf("Не получилось собрать json для возврата истории списаний", err)
+		fmt.Println("Не получилось собрать json для возврата истории списаний", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}

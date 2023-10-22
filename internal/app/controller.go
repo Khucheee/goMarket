@@ -31,14 +31,14 @@ func NewController(storage storage.Storage, config *config.Config, worker concur
 	return &controller
 }
 
-func (b *Controller) WithLogging(h http.Handler) http.Handler {
+func (c *Controller) WithLogging(h http.Handler) http.Handler {
 	logfn := func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 		responseData := &logger.ResponseData{Status: 0, Size: 0}
-		lw := logger.LoggingResponseWriter{w, responseData}
+		lw := logger.LoggingResponseWriter{ResponseWriter: w, ResponseData: responseData}
 		h.ServeHTTP(&lw, r)
 		duration := time.Since(start)
-		b.logger.Sugar.Infoln(
+		c.logger.Sugar.Infoln(
 			"URI", r.RequestURI,
 			"duration", duration,
 			"method", r.Method,

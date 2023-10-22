@@ -87,6 +87,9 @@ func (w *worker) CalculateOrder(orderID, userID string) {
 	fmt.Println("Вывожу адресс по которому мы стучимся к системе рассчета:", w.config.AccuralSystemAddress+"/api/orders/"+orderID)
 	request.Header.Add("Content-Length", "0")
 	response, err := client.Do(request)
+	if err != nil {
+		fmt.Println("Упал запрос к accural:", err)
+	}
 	fmt.Println("Статус код ответа сервиса рассчета:", response.StatusCode)
 	orderData := GetResponseBody(response)
 	fmt.Println("Создаем заказ в базе")
@@ -144,7 +147,7 @@ func GetResponseBody(response *http.Response) *AccrualServiceResponse {
 		fmt.Println("Не получилсь прочитать тело ответа сервиса рассчета бонусов", err)
 		return nil
 	}
-	json.Unmarshal(buf.Bytes(), &orderData) //парсим тело в нашу структуру
+	err = json.Unmarshal(buf.Bytes(), &orderData) //парсим тело в нашу структуру
 	if err != nil {
 		fmt.Println("Не получилось распарсить json из тела ответа системы рассчета бонусов")
 		return nil

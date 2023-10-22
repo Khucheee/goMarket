@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"github.com/Khucheee/goMarket/internal/app"
 	"github.com/Khucheee/goMarket/internal/concurrency"
 	"github.com/Khucheee/goMarket/internal/config"
@@ -23,7 +24,7 @@ func main() {
 	router.Mount("/", controller.Route())
 	err := http.ListenAndServe(config.RunAddress, router) //запускаем сервер
 	if err != nil {
-		//тут будем логировать
+		fmt.Println("Ошибка при запуске сервера", err)
 	}
 }
 

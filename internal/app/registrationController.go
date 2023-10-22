@@ -37,7 +37,7 @@ func (c *Controller) Register(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("Неверный формат запроса"))
 		return
 	}
-	json.Unmarshal(buf.Bytes(), &credentials) //парсим тело в нашу структуру
+	err = json.Unmarshal(buf.Bytes(), &credentials) //парсим тело в нашу структуру
 	if err != nil {
 		fmt.Println("ошибка при парсинге тела в ручке регистрации", err)
 		w.WriteHeader(http.StatusBadRequest)
@@ -88,7 +88,7 @@ func (c *Controller) Login(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("Неверный формат запроса"))
 		return
 	}
-	json.Unmarshal(buf.Bytes(), &credentials) //парсим тело в нашу структуру
+	err = json.Unmarshal(buf.Bytes(), &credentials) //парсим тело в нашу структуру
 	if err != nil {
 		fmt.Println("ошибка при парсинге тела в ручке авторизации", err)
 		w.WriteHeader(http.StatusBadRequest)
@@ -102,6 +102,9 @@ func (c *Controller) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	authCookie, err := auth.MakeAuthCookie(userID)
+	if err != nil {
+		fmt.Println("Произошла ошибка при создании куки для авторизации")
+	}
 	http.SetCookie(w, authCookie)
 	w.WriteHeader(http.StatusOK)
 	//может добавить u allredy login?
