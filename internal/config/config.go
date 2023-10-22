@@ -21,7 +21,7 @@ func (c *Config) setConfig() {
 	//get variables from flags
 	flag.StringVar(&c.RunAddress, "a", "localhost:8080", "adress and port for start server")
 	flag.StringVar(&c.DatabaseURI, "d", "", "for database link")
-	flag.StringVar(&c.AccuralSystemAddress, "r", "localhost:8080", "accural_system_address")
+	flag.StringVar(&c.AccuralSystemAddress, "r", "", "accural_system_address")
 	flag.Parse()
 
 	//check global variables

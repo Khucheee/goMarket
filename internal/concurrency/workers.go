@@ -92,6 +92,9 @@ func (w *worker) CalculateOrder(orderID, userID string) {
 		w.storage.CreateOrder(orderID, userID, "NEW", 0)
 		return
 	}
+	if response.StatusCode == http.StatusNotFound {
+		w.storage.CreateOrder(orderID, userID, "INVALID", 0)
+	}
 	orderData := GetResponseBody(response)
 	fmt.Println("Создаем заказ в базе")
 	ok := w.storage.CreateOrder(orderID, userID, orderData.Status, orderData.Accrual)
