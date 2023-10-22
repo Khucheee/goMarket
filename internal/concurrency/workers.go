@@ -79,13 +79,16 @@ func (w *worker) spawnWorkers(ctx context.Context) {
 
 func (w *worker) CalculateOrder(orderID, userID string) {
 	fmt.Println("выполняется запрос к рассчетному сервису")
-	response, err := http.Get("http://" + w.config.AccuralSystemAddress + "/api/orders/" + orderID)
+	//response, err := http.Get("http://" + w.config.AccuralSystemAddress + "/api/orders/" + orderID)
+	client := &http.Client{}
+	request, err := http.NewRequest(http.MethodGet, "http://"+w.config.AccuralSystemAddress+"/api/orders/"+orderID, nil)
 	if err != nil {
 		fmt.Println("Что-то упало на запросе к системе рассчета", err)
 	}
-	//если статус 429, то ждем
-	//если статус 204, то ставим на таймер
+	request.Header.Add("Content-Length", "0")
+	response, err := client.Do(request)
 	orderData := GetResponseBody(response)
+	fmt.Println("Создаем заказ в базе")
 	w.storage.CreateOrder(orderID, userID, orderData.Status, orderData.Accrual)
 	if orderData.Status == "PROCESSED" {
 		fmt.Println("Происходит регистрация транзакции, начисление денег на кошелек")
@@ -97,7 +100,13 @@ func (w *worker) CalculateOrder(orderID, userID string) {
 		for {
 			fmt.Println("Запущена джоба по обновлению данных заказа")
 			time.Sleep(time.Second)
-			response, err := http.Get("http://" + w.config.AccuralSystemAddress + "/api/orders/" + orderID)
+			//response, err := http.Get("http://" + w.config.AccuralSystemAddress + "/api/orders/" + orderID)
+			request, err = http.NewRequest(http.MethodGet, "http://"+w.config.AccuralSystemAddress+"/api/orders/"+orderID, nil)
+			if err != nil {
+				fmt.Println("Что-то упало на запросе к системе рассчета", err)
+			}
+			request.Header.Add("Content-Length", "0")
+			response, err = client.Do(request)
 			if err != nil {
 				fmt.Println("Что-то упало на запросе к системе рассчета", err)
 			}
@@ -122,8 +131,9 @@ func (w *worker) CalculateOrder(orderID, userID string) {
 }
 
 func GetResponseBody(response *http.Response) *AccrualServiceResponse {
-	var orderData AccrualServiceResponse  //создаем структуру в которую парсим полученный json
-	var buf bytes.Buffer                  //создаем буфер для получение тела запроса
+	var orderData AccrualServiceResponse //создаем структуру в которую парсим полученный json
+	var buf bytes.Buffer                 //создаем буфер для получение тела запроса
+	fmt.Println("Выполняем чтение тела из ответа accrual")
 	_, err := buf.ReadFrom(response.Body) //читаем тело запроса в буфер
 	if err != nil {
 		fmt.Println("Не получилсь прочитать тело ответа сервиса рассчета бонусов", err)
