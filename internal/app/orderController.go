@@ -45,7 +45,14 @@ func (c *Controller) EvaluateOrder(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("Неверный формат номера заказа"))
 		return
 	}
+	if c.OrdersCache[orderID] == userID {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("Вы уже загружали данный заказ"))
+		return
+	}
+	c.OrdersCache[orderID] = userID
 	owner := c.storage.CheckOrderOwner(orderID)
+
 	//если создатель не вы
 	if owner != userID && owner != "" { //если пользователь не наш и не пустой значит номер был загружен другим пользователем
 		w.WriteHeader(http.StatusConflict)

@@ -15,6 +15,7 @@ type Controller struct {
 	worker         concurrency.Worker
 	accrualChannel *chan concurrency.OrderForWorker
 	logger         *logger.Logger
+	OrdersCache    map[string]string
 }
 
 func NewController(storage storage.Storage, config *config.Config, worker concurrency.Worker,
@@ -25,6 +26,7 @@ func NewController(storage storage.Storage, config *config.Config, worker concur
 		worker:         worker,
 		accrualChannel: &accrualChannel,
 		logger:         logger,
+		OrdersCache:    make(map[string]string),
 	}
 	return &controller
 }
