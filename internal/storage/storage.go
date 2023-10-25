@@ -13,11 +13,11 @@ type Storage interface {
 	CreateOrder(string, string, string, float64) bool
 	UpdateOrder(string, string, float64)
 	GetUserOrders(string) []UserOrderInfo
-	RegisterIncomeTransaction(string, string, float64)
+	RegisterIncomeTransaction(string, float64)
 	GetWalletInfo(string) (float64, float64)
 	RegisterOutcomeTransaction(string, string, float64) bool
 	GetUserWithdrawals(string) []WithdrawalsHistory
-	GetOrder(string) bool
+	GetOrdersForUpdate() []string
 }
 
 func NewStorage(config *config.Config) Storage {

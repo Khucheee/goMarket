@@ -14,6 +14,10 @@ import (
 	"time"
 )
 
+type OrdersForUpdate struct {
+	OrderID string
+}
+
 type UserOrderInfo struct {
 	OrderID   string  `json:"number"`
 	Status    string  `json:"status"`
@@ -27,7 +31,6 @@ type WithdrawalsHistory struct {
 	CreatedAt string  `json:"processed_at"`
 }
 
-// "host=localhost user=postgres password=ALFREd2002 dbname=postgres sslmode=disable"
 const migrationFolder = "file://internal/storage/migrations/"
 
 type Postgres struct {
@@ -57,14 +60,12 @@ func (p *Postgres) Initialize() {
 			fmt.Println("Упала миграция при поднятии", err)
 		}
 	}
-	//сохраняем подключение
 	//dbConnection, err := pgxpool.New(context.Background(), p.DatabaseURI)
 	//p.dbConnection = dbConnection
 	p.dbConnection = connectionForMigrations
 }
 
 func (p *Postgres) CheckLoginExist(login string) bool {
-	//запрос в базу
 	var result string
 	row := p.dbConnection.QueryRowContext(context.Background(),
 		"SELECT user_id FROM usr WHERE login=$1", login)
@@ -102,27 +103,31 @@ func (p *Postgres) CheckOrderOwner(orderID string) string {
 	return result
 }
 
-func (p *Postgres) GetOrder(orderID string) bool {
+func (p *Postgres) GetOrdersForUpdate() []string {
+	var ordersForUpdate []string
+	rows, err := p.dbConnection.QueryContext(context.Background(),
+		"SELECT order_id FROM orders WHERE status=$1 or status=$2", "NEW", "PROCESSING")
+	if rows.Err() != nil {
+		fmt.Println("Что-то упало на чтении полученых в запросе строк для джобы обновления статусов заказов")
+	}
+	if err != nil {
+		fmt.Println("Упал запрос в базу для джобы обновления статусов заказов", err)
+	}
 	var result string
-	row := p.dbConnection.QueryRowContext(context.Background(),
-		"SELECT user_id FROM orders WHERE order_id=$1", orderID)
-	row.Scan(&result)
-	return result != ""
+	for rows.Next() {
+		err = rows.Scan(&result)
+		if err != nil {
+			fmt.Println("Что-то упало на сканировании полученных строк по заказам пользователя:", err)
+		}
+		ordersForUpdate = append(ordersForUpdate, result)
+	}
+	return ordersForUpdate
 }
 
 func (p *Postgres) CreateOrder(orderID, userID, status string, amount float64) bool {
-	ok := p.GetOrder(orderID)
-	if ok {
-		return false
-	}
-
 	fmt.Println("Запущен процесс сохранения заказа в базу")
 	fmt.Println("Полученные данные для сохранения заказа:")
 	fmt.Println(orderID, "- номер заказа\n", userID, "- id юзера \n", status, "- статус заказа\n", amount, "- начисленно баллов")
-	if status == "" || status == "REGISTERED" {
-		fmt.Println("Пришел пустой статус заказа, проставляю NEW")
-		status = "NEW"
-	}
 	row, err := p.dbConnection.ExecContext(context.Background(),
 		"INSERT INTO orders VALUES($1,$2,$3,$4,now(),now())",
 		orderID, userID, status, amount)
@@ -174,7 +179,8 @@ func (p *Postgres) GetUserOrders(userID string) []UserOrderInfo {
 	return orders
 }
 
-func (p *Postgres) RegisterIncomeTransaction(userID, orderID string, amount float64) {
+func (p *Postgres) RegisterIncomeTransaction(orderID string, amount float64) {
+	userID := p.CheckOrderOwner(orderID)
 	operationType := "INCOME"
 	_, err := p.dbConnection.ExecContext(context.Background(),
 		"INSERT INTO account_transaction VALUES($1,$2,$3,$4,now())", userID, operationType, orderID, amount)
@@ -240,14 +246,3 @@ func (p *Postgres) GetUserWithdrawals(userID string) []WithdrawalsHistory {
 	}
 	return withdrawals
 }
-
-//как будет выглядеть бд:
-//номер заказа - строка - начиленные бонусы - числа
-//account_transaction
-// user id | operation_type | status | amount | date
-
-//user
-//user id|login|password
-
-//таблица с заказами orders
-// order id |status| description(состав заказа или user id)
