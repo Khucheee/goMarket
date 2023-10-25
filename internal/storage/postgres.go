@@ -107,6 +107,9 @@ func (p *Postgres) GetOrdersForUpdate() []string {
 	var ordersForUpdate []string
 	rows, err := p.dbConnection.QueryContext(context.Background(),
 		"SELECT order_id FROM orders WHERE status=$1 or status=$2", "NEW", "PROCESSING")
+	if err != nil {
+		fmt.Println("Упал запрос в базу для джобы обновления статусов заказов", err)
+	}
 	var result string
 	for rows.Next() {
 		err = rows.Scan(&result)
