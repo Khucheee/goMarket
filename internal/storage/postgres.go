@@ -14,6 +14,10 @@ import (
 	"time"
 )
 
+type OrdersForUpdate struct {
+	OrderID string
+}
+
 type UserOrderInfo struct {
 	OrderID   string  `json:"number"`
 	Status    string  `json:"status"`
@@ -28,7 +32,7 @@ type WithdrawalsHistory struct {
 }
 
 // "host=localhost user=postgres password=ALFREd2002 dbname=postgres sslmode=disable"
-const migrationFolder = "file://internal/storage/migrations/"
+const migrationFolder = "file://../../internal/storage/migrations/"
 
 type Postgres struct {
 	DatabaseURI string
@@ -102,27 +106,25 @@ func (p *Postgres) CheckOrderOwner(orderID string) string {
 	return result
 }
 
-func (p *Postgres) GetOrder(orderID string) bool {
+func (p *Postgres) GetOrdersForUpdate() []string {
+	var ordersForUpdate []string
+	rows, err := p.dbConnection.QueryContext(context.Background(),
+		"SELECT order_id FROM orders WHERE status=$1 or status=$2", "NEW", "PROCESSING")
 	var result string
-	row := p.dbConnection.QueryRowContext(context.Background(),
-		"SELECT user_id FROM orders WHERE order_id=$1", orderID)
-	row.Scan(&result)
-	return result != ""
+	for rows.Next() {
+		err = rows.Scan(&result)
+		if err != nil {
+			fmt.Println("Что-то упало на сканировании полученных строк по заказам пользователя:", err)
+		}
+		ordersForUpdate = append(ordersForUpdate, result)
+	}
+	return ordersForUpdate
 }
 
 func (p *Postgres) CreateOrder(orderID, userID, status string, amount float64) bool {
-	ok := p.GetOrder(orderID)
-	if ok {
-		return false
-	}
-
 	fmt.Println("Запущен процесс сохранения заказа в базу")
 	fmt.Println("Полученные данные для сохранения заказа:")
 	fmt.Println(orderID, "- номер заказа\n", userID, "- id юзера \n", status, "- статус заказа\n", amount, "- начисленно баллов")
-	if status == "" || status == "REGISTERED" {
-		fmt.Println("Пришел пустой статус заказа, проставляю NEW")
-		status = "NEW"
-	}
 	row, err := p.dbConnection.ExecContext(context.Background(),
 		"INSERT INTO orders VALUES($1,$2,$3,$4,now(),now())",
 		orderID, userID, status, amount)
@@ -174,7 +176,11 @@ func (p *Postgres) GetUserOrders(userID string) []UserOrderInfo {
 	return orders
 }
 
-func (p *Postgres) RegisterIncomeTransaction(userID, orderID string, amount float64) {
+func (p *Postgres) RegisterIncomeTransaction(orderID string, amount float64) {
+	//есть два варианта
+	//сначала сделать запрос по заказу, получить клиента, затем сохранить транзакцию
+	//сразу в воркере на обновление передавать пользователя и номер заказа
+	userID := p.CheckOrderOwner(orderID)
 	operationType := "INCOME"
 	_, err := p.dbConnection.ExecContext(context.Background(),
 		"INSERT INTO account_transaction VALUES($1,$2,$3,$4,now())", userID, operationType, orderID, amount)

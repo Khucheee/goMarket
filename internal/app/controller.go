@@ -1,7 +1,6 @@
 package app
 
 import (
-	"github.com/Khucheee/goMarket/internal/concurrency"
 	"github.com/Khucheee/goMarket/internal/config"
 	"github.com/Khucheee/goMarket/internal/logger"
 	"github.com/Khucheee/goMarket/internal/storage"
@@ -10,23 +9,18 @@ import (
 )
 
 type Controller struct {
-	storage        storage.Storage
-	config         *config.Config
-	worker         concurrency.Worker
-	accrualChannel *chan concurrency.OrderForWorker
-	logger         *logger.Logger
-	OrdersCache    map[string]string
+	storage     storage.Storage
+	config      *config.Config
+	logger      *logger.Logger
+	OrdersCache map[string]string
 }
 
-func NewController(storage storage.Storage, config *config.Config, worker concurrency.Worker,
-	accrualChannel chan concurrency.OrderForWorker, logger *logger.Logger) *Controller {
+func NewController(storage storage.Storage, config *config.Config, logger *logger.Logger) *Controller {
 	controller := Controller{
-		storage:        storage,
-		config:         config,
-		worker:         worker,
-		accrualChannel: &accrualChannel,
-		logger:         logger,
-		OrdersCache:    make(map[string]string),
+		storage:     storage,
+		config:      config,
+		logger:      logger,
+		OrdersCache: make(map[string]string),
 	}
 	return &controller
 }

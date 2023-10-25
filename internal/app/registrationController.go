@@ -15,14 +15,6 @@ type Credentials struct {
 
 // регистрация
 func (c *Controller) Register(w http.ResponseWriter, r *http.Request) {
-	//получаем прару пароль/логин.
-	//каждый логин должен быть уникальным
-	//после успешной регистрации должа происходить автоматическая аутентификация
-	//для аутентификации выдавать куку или http:authorization
-	//200 пользователь успешно зарегистрировался и прошел аутентификацию
-	//400 неверный формат запроса
-	//409 логин уже занят
-	//500 внутренняя ошибка сервера
 	if contentType := r.Header.Get("Content-Type"); contentType != "application/json" {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte("Неверный формат запроса"))
