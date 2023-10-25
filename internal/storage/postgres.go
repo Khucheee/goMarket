@@ -31,7 +31,6 @@ type WithdrawalsHistory struct {
 	CreatedAt string  `json:"processed_at"`
 }
 
-// "host=localhost user=postgres password=ALFREd2002 dbname=postgres sslmode=disable"
 const migrationFolder = "file://internal/storage/migrations/"
 
 type Postgres struct {
@@ -61,14 +60,12 @@ func (p *Postgres) Initialize() {
 			fmt.Println("Упала миграция при поднятии", err)
 		}
 	}
-	//сохраняем подключение
 	//dbConnection, err := pgxpool.New(context.Background(), p.DatabaseURI)
 	//p.dbConnection = dbConnection
 	p.dbConnection = connectionForMigrations
 }
 
 func (p *Postgres) CheckLoginExist(login string) bool {
-	//запрос в базу
 	var result string
 	row := p.dbConnection.QueryRowContext(context.Background(),
 		"SELECT user_id FROM usr WHERE login=$1", login)
@@ -177,9 +174,6 @@ func (p *Postgres) GetUserOrders(userID string) []UserOrderInfo {
 }
 
 func (p *Postgres) RegisterIncomeTransaction(orderID string, amount float64) {
-	//есть два варианта
-	//сначала сделать запрос по заказу, получить клиента, затем сохранить транзакцию
-	//сразу в воркере на обновление передавать пользователя и номер заказа
 	userID := p.CheckOrderOwner(orderID)
 	operationType := "INCOME"
 	_, err := p.dbConnection.ExecContext(context.Background(),
@@ -246,14 +240,3 @@ func (p *Postgres) GetUserWithdrawals(userID string) []WithdrawalsHistory {
 	}
 	return withdrawals
 }
-
-//как будет выглядеть бд:
-//номер заказа - строка - начиленные бонусы - числа
-//account_transaction
-// user id | operation_type | status | amount | date
-
-//user
-//user id|login|password
-
-//таблица с заказами orders
-// order id |status| description(состав заказа или user id)

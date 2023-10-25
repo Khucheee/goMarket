@@ -9,6 +9,7 @@ import (
 	"github.com/Khucheee/goMarket/internal/storage"
 	"net/http"
 	"sync"
+	"time"
 )
 
 type AccrualWorker struct {
@@ -23,11 +24,6 @@ type Worker interface {
 	Start(pctx context.Context)
 	Stop()
 }
-
-//type OrderForWorker struct {
-//	OrderID string
-//	UserID  string
-//}
 
 type AccrualServiceResponse struct {
 	Order   string  `json:"order"`
@@ -66,13 +62,13 @@ func (w *AccrualWorker) spawnWorkers(ctx context.Context) {
 			return
 		case value := <-w.ownChannel:
 			fmt.Println("Произошло чтение из канала, получены значения:", value)
-			w.CalculateOrder(value)
+			w.сalculateOrder(value)
 
 		}
 	}
 }
 
-func (w *AccrualWorker) CalculateOrder(orderID string) {
+func (w *AccrualWorker) сalculateOrder(orderID string) {
 	fmt.Println("выполняется запрос к рассчетному сервису")
 	//response, err := http.Get("http://" + w.config.AccuralSystemAddress + "/api/orders/" + orderID)
 	client := &http.Client{}
@@ -86,7 +82,10 @@ func (w *AccrualWorker) CalculateOrder(orderID string) {
 		fmt.Println("Упал запрос к accural:", err)
 	}
 	fmt.Println("Статус код ответа сервиса рассчета:", response.StatusCode)
-	orderData := GetResponseBody(response)
+	if response.StatusCode == http.StatusTooManyRequests {
+		time.Sleep(time.Millisecond * 61000)
+	}
+	orderData := w.getResponseBody(response)
 	//если статус processed, то обновляем статус в базе и создаем транзакцию
 	if orderData.Status == "PROCESSED" {
 		w.storage.UpdateOrder(orderID, orderData.Status, orderData.Accrual)
@@ -109,9 +108,10 @@ func (w *AccrualWorker) CalculateOrder(orderID string) {
 	}
 }
 
-func GetResponseBody(response *http.Response) *AccrualServiceResponse {
-	var orderData AccrualServiceResponse //создаем структуру в которую парсим полученный json
-	var buf bytes.Buffer                 //создаем буфер для получение тела запроса
+func (w *AccrualWorker) getResponseBody(response *http.Response) *AccrualServiceResponse {
+	//тут парсинг ответа от accrual
+	var orderData AccrualServiceResponse
+	var buf bytes.Buffer
 	fmt.Println("Выполняем чтение тела из ответа accrual")
 	_, err := buf.ReadFrom(response.Body) //читаем тело запроса в буфер
 	if err != nil {

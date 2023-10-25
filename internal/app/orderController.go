@@ -71,16 +71,16 @@ func (c *Controller) EvaluateOrder(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("Вы уже загружали данный заказ"))
 		return
 	}
-
-	//дальше, если такого заказа еще не было, то идем к сервису рассчетов, получаем из него данные и записываем в базу
-	//fmt.Println("передаем значение в воркеры")
+	//как было раньше
 	//orderForWorker := concurrency.OrderForWorker{OrderID: orderID, UserID: userID}
 	//*c.accrualChannel <- orderForWorker
-	//ТЕПЕРЬ ТУТ НАДО СРАЗУ ИДТИ В БАЗУ И РЕГИСТРИРОВАТЬ ЗАКАЗ
-	c.storage.CreateOrder(orderID, userID, "NEW", 0) //и здесь, если по ключу уже есть такой заказ, то прокидывать ошибку
-	//если вернулась ошибка, значит заказ уже существует
-	//далее запрос в базу - если userID по заказу совпадает с userID в хендлере, тогда возвращаем 200
-	//если user id не сходится, возвращаем 409
+
+	//теперь сразу записывается значение в базу, записываю вместе с amount, так как требуется
+	//возвращать число бонусов в ручке get api/user/orders
+	//логика такая: воркер из файла concurrency/orderWorker каждое n количество секунд ходит в базу, чтобы получить
+	//заказы в статусе NEW и PROCESSING, далее с помощью цикла закидывает значения в канал воркера, который живет в файле
+	//accrualWorkers, тот в свою очередь читает и ходит в accrual
+	c.storage.CreateOrder(orderID, userID, "NEW", 0)
 	w.WriteHeader(http.StatusAccepted)
 	w.Write([]byte("Новый номер заказа принят в обработку"))
 	//c.CalculateOrder(orderID, userID)

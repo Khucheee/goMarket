@@ -50,12 +50,12 @@ func (w *OrderWorker) spawnWorkers(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		case <-t.C:
-			w.doWork()
+			w.updateOrders()
 		}
 	}
 }
 
-func (w *OrderWorker) doWork() {
+func (w *OrderWorker) updateOrders() {
 	orders := w.storage.GetOrdersForUpdate()
 	for _, order := range orders {
 		w.accrualChannel <- order

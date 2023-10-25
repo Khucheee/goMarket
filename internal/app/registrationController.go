@@ -20,16 +20,16 @@ func (c *Controller) Register(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("Неверный формат запроса"))
 		return
 	}
-	var credentials Credentials    //создаем структуру в которую парсим полученный json
-	var buf bytes.Buffer           //создаем буфер для получение тела запроса
-	_, err := buf.ReadFrom(r.Body) //читаем тело запроса в буфер
+	var credentials Credentials
+	var buf bytes.Buffer
+	_, err := buf.ReadFrom(r.Body)
 	if err != nil {
 		fmt.Println("ошибка при чтении тела в ручке регистрации", err)
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte("Неверный формат запроса"))
 		return
 	}
-	err = json.Unmarshal(buf.Bytes(), &credentials) //парсим тело в нашу структуру
+	err = json.Unmarshal(buf.Bytes(), &credentials)
 	if err != nil {
 		fmt.Println("ошибка при парсинге тела в ручке регистрации", err)
 		w.WriteHeader(http.StatusBadRequest)

@@ -13,26 +13,19 @@ import (
 )
 
 func main() {
-	config := config.NewConfig()          //устанавливаем конфиг
-	storage := storage.NewStorage(config) //создаем хранилище
-
+	config := config.NewConfig()
+	storage := storage.NewStorage(config)
 	accrualWorker, accrualChannel := concurrency.NewAccrualWorker(storage, config)
 	ordersWorker := concurrency.NewOrdersWorker(storage, 5, accrualChannel)
 	accrualWorker.Start(context.Background())
 	ordersWorker.Start(context.Background())
-
 	logger := logger.NewLogger()
 	logger.CreateSuggarLogger()
-	controller := app.NewController(storage, config, logger) //создаем оператор //переименовать в контроллер обратно))
-	router := chi.NewRouter()                                //создаем роутер
+	controller := app.NewController(storage, config, logger)
+	router := chi.NewRouter()
 	router.Mount("/", controller.Route())
-	err := http.ListenAndServe(config.RunAddress, router) //запускаем сервер
+	err := http.ListenAndServe(config.RunAddress, router)
 	if err != nil {
 		fmt.Println("Ошибка при запуске сервера", err)
 	}
 }
-
-//сначала меняю логику с сохранением и учетом заявок
-//заодно чищу код
-//затем меняю воркеры
-//затем в выходные прорабатываю ошибки
